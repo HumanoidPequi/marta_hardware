@@ -6,14 +6,14 @@ ros::NodeHandle nh;
 
 #define DEBUG_SERIAL Serial
 #define DXL_SERIAL1 Serial1 // right leg
-#define DXL_SERIAL2 Serial2 // left lef
-#define DXL_SERIAL3 Serial3 // right arm
-#define DXL_SERIAL5 Serial5 // left arm and head
+#define DXL_SERIAL2 Serial5 // left lef
+#define DXL_SERIAL3 Serial2 // right arm
+#define DXL_SERIAL5 Serial3 // left arm and head
 
 const int DXL_DIR_PIN1 = 2; // pino de controle Serial1
-const int DXL_DIR_PIN2 = 9; // pino de controle Serial2
-const int DXL_DIR_PIN3 = 23; // pino de controle Serial3
-const int DXL_DIR_PIN5 = 22; // pino de controle Serial5
+const int DXL_DIR_PIN2 = 22; // pino de controle Serial2
+const int DXL_DIR_PIN3 = 9; // pino de controle Serial3
+const int DXL_DIR_PIN5 = 23; // pino de controle Serial5
 
 const uint8_t BROADCAST_ID = 254;
 const float DYNAMIXEL_PROTOCOL_VERSION = 2.0;
