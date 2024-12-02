@@ -162,10 +162,8 @@ void right_leg_cb(const std_msgs::Int16MultiArray& cmd_msg) {
 
 void left_leg_cb(const std_msgs::Int16MultiArray& cmd_msg) {
    for (int i = 0; i < DXL_ID_CNT; i++) {
-   for (int i = 0; i < DXL_ID_CNT; i++) {
       int32_t d_theta = convert_command(cmd_msg.data[i]);
       goal_position_L[i] = goal_position_initial_L[i] + d_theta*Signal_left[i];
-   }
   }
 } 
 
