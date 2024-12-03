@@ -1,8 +1,27 @@
 #include <Dynamixel2Arduino.h>
+
+#include <Wire.h>
+#include "SparkFun_BNO080_Arduino_Library.h"
+
 #include <ros.h>
+#include <ros/time.h>
+
 #include <std_msgs/Int16MultiArray.h>
+#include <std_msgs/Header.h>
+#include <sensor_msgs/Imu.h>
+#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/Vector3.h>
 
 ros::NodeHandle nh;
+
+//IMU ros config
+sensor_msgs::Imu inertial;
+geometry_msgs::Vector3 lin;
+geometry_msgs::Vector3 ang;
+
+
+ros::Publisher pub_imu("micro/IMU", &inertial);
+char in[] = "/imu";
 
 //#define DEBUG_SERIAL Serial
 #define DXL_SERIAL1 Serial1 // right leg
@@ -117,14 +136,16 @@ Dynamixel2Arduino dxl2(DXL_SERIAL2, DXL_DIR_PIN2);
 Dynamixel2Arduino dxl3(DXL_SERIAL3, DXL_DIR_PIN3);
 Dynamixel2Arduino dxl5(DXL_SERIAL5, DXL_DIR_PIN5);
 
+BNO080 myIMU;
+
 // This namespace is required to use DYNAMIXEL Control table item name definitions
 using namespace ControlTableItem;
 
 int32_t goal_position_initial_R[DXL_ID_CNT] = {2048,2048,2048,2048,2048,2048};
 int32_t goal_position_R[DXL_ID_CNT] = {2048,2048,2048,2048,2048,2048};
 
-int32_t goal_position_initial_L[DXL_ID_CNT] = {2048,2048,2048,2048,2048,2048};
-int32_t goal_position_L[DXL_ID_CNT] = {2048,2048,2048,2048,2048,2048};
+int32_t goal_position_initial_L[DXL_ID_CNT] = {2048,2048,2100,2048,2048,2048};
+int32_t goal_position_L[DXL_ID_CNT] = {2048,2048,2100,2048,2048,2048};
 
 int32_t goal_position_initial_arm_r[DXL_ID_CNT_ARM_R] = {2048,2048,2048};
 int32_t goal_position_arm_r[DXL_ID_CNT_ARM_R] = {2048,2048,2048};
@@ -134,7 +155,7 @@ int32_t goal_position_arm_l_head[DXL_ID_CNT_ARM_L_HEAD] = {2048,2048,2048,2048,2
 
 int convert_command(int ang_command /*, int32_t marta_joints_initial, bool joint_reversed*/) {
   //Converte os valores de 16 bits recebidos pelo rosserial para os valores de 12 bits
-  int position_command = map(ang_command, 0, 63, -2048, 2048);
+  int position_command = map(ang_command, -31, 31, -2048, 2048);
   
   return position_command;
 }
@@ -178,7 +199,7 @@ void arm_r_cb(const std_msgs::Int16MultiArray& cmd_msg) {
 
 void arm_l_head_cb(const std_msgs::Int16MultiArray& cmd_msg) {
    for (int i = 0; i < DXL_ID_CNT_ARM_L_HEAD; i++) {
-      int32_t d_theta = convert_command_degree(cmd_msg.data[i]);
+      int32_t d_theta = convert_command(cmd_msg.data[i]);
       goal_position_arm_l_head[i] = goal_position_initial_arm_l_head[i] + d_theta*Signal_arm_l_head[i];
    }
 }
@@ -212,9 +233,13 @@ void setup() {
 
   sync_read_write_setup();
 
+  bno_setup();
 }
 
 void loop() {
+  
+  bno_loop();
+  
   static uint32_t try_count = 0;
   uint8_t i, recv_cnt;
 
@@ -298,7 +323,7 @@ void loop() {
 
 void dynamixel_setup(){
   int i;
-  pinMode(LED_BUILTIN, OUTPUT);
+
   Serial.begin(1000000);
   dxl1.begin(1000000);
   dxl1.setPortProtocolVersion(DYNAMIXEL_PROTOCOL_VERSION);
@@ -451,4 +476,55 @@ void sync_read_write_setup(){
     sw_infos5.xel_count++;
   }
   sw_infos5.is_info_changed = true;
+}
+
+void bno_setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  Wire.begin();
+  digitalWrite(LED_BUILTIN, LOW);
+  if (myIMU.begin() == false)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(1000);
+    digitalWrite(LED_BUILTIN, HIGH);
+    while (1)
+      ;
+  }
+  delay(10);
+  Wire.setClock(400000); // Increase I2C data rate to 400kHz
+  delay(10);
+  myIMU.enableLinearAccelerometer(8); // m/s^2 no gravity
+  myIMU.enableRotationVector(4);      // quat
+  myIMU.enableGyro(12);               // rad/s
+
+  nh.advertise(pub_imu);
+
+  digitalWrite(LED_BUILTIN, LOW);
+}
+
+void bno_loop() {
+  inertial.header.frame_id = in;
+  inertial.header.stamp = nh.now();
+  if (myIMU.dataAvailable() == true)
+  {
+    digitalWrite(LED_BUILTIN, HIGH);
+    // internal copies of the IMU data
+    byte linAccuracy = 0;
+    byte gyroAccuracy = 0;
+    float quatRadianAccuracy = 0;
+    byte quatAccuracy = 0;
+
+    // get IMU data in one go for each sensor type
+    myIMU.getLinAccel(lin.x, lin.y, lin.z, linAccuracy);
+    myIMU.getGyro(ang.x, ang.y, ang.z, gyroAccuracy);
+    myIMU.getQuat(inertial.orientation.x, inertial.orientation.y, inertial.orientation.z, inertial.orientation.w, quatRadianAccuracy, quatAccuracy);
+    inertial.angular_velocity = ang;
+    inertial.linear_acceleration = lin;
+    pub_imu.publish(&inertial);
+    //        digitalWrite(LED_BUILTIN, LOW);
+  }
+  pub_imu.publish(&inertial);
+  delay(1);
 }
