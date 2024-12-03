@@ -6,7 +6,7 @@
 #include <ros.h>
 #include <ros/time.h>
 
-#include <std_msgs/Int16MultiArray.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <std_msgs/Header.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Quaternion.h>
@@ -153,14 +153,12 @@ int32_t goal_position_arm_r[DXL_ID_CNT_ARM_R] = {2048,2048,2048};
 int32_t goal_position_initial_arm_l_head[DXL_ID_CNT_ARM_L_HEAD] = {2048,2048,2048,2048,2048};
 int32_t goal_position_arm_l_head[DXL_ID_CNT_ARM_L_HEAD] = {2048,2048,2048,2048,2048};
 
-int convert_command(int ang_command /*, int32_t marta_joints_initial, bool joint_reversed*/) {
+int convert_command(float ang_command) {
   //Converte os valores de 16 bits recebidos pelo rosserial para os valores de 12 bits
-  int position_command = map(ang_command, -31, 31, -2048, 2048);
-  
-  return position_command;
+  return (int)((ang_command / M_PI) * 2048);
 }
 
-int convert_command_degree(int ang_command /*, int32_t marta_joints_initial, bool joint_reversed*/) {
+int convert_command_degree(int ang_command) {
   //Converte os valores de 16 bits recebidos pelo rosserial para os valores de 12 bits
   int position_command = map(ang_command, -1800, 1800, -2048, 2048);
   
@@ -174,28 +172,28 @@ int convert_state(int ang_state /*, int32_t marta_joints_initial, bool joint_rev
   return position_state;
 }
 
-void right_leg_cb(const std_msgs::Int16MultiArray& cmd_msg) {
+void right_leg_cb(const std_msgs::Float64MultiArray& cmd_msg) {
    for (int i = 0; i < DXL_ID_CNT; i++) {
       int32_t d_theta = convert_command(cmd_msg.data[i]);
       goal_position_R[i] = goal_position_initial_R[i] + d_theta*Signal_right[i];
    }
 }
 
-void left_leg_cb(const std_msgs::Int16MultiArray& cmd_msg) {
+void left_leg_cb(const std_msgs::Float64MultiArray& cmd_msg) {
    for (int i = 0; i < DXL_ID_CNT; i++) {
       int32_t d_theta = convert_command(cmd_msg.data[i]);
       goal_position_L[i] = goal_position_initial_L[i] + d_theta*Signal_left[i];
   }
 } 
 
-void arm_r_cb(const std_msgs::Int16MultiArray& cmd_msg) {
+void arm_r_cb(const std_msgs::Float64MultiArray& cmd_msg) {
    for (int i = 0; i < DXL_ID_CNT_ARM_R; i++) {
       int32_t d_theta = convert_command(cmd_msg.data[i]);
       goal_position_arm_r[i] = goal_position_initial_arm_r[i] + d_theta*Signal_arm_r[i];
    }
 }
 
-void arm_l_head_cb(const std_msgs::Int16MultiArray& cmd_msg) {
+void arm_l_head_cb(const std_msgs::Float64MultiArray& cmd_msg) {
    for (int i = 0; i < DXL_ID_CNT_ARM_L_HEAD; i++) {
       int32_t d_theta = convert_command(cmd_msg.data[i]);
       goal_position_arm_l_head[i] = goal_position_initial_arm_l_head[i] + d_theta*Signal_arm_l_head[i];
@@ -204,18 +202,18 @@ void arm_l_head_cb(const std_msgs::Int16MultiArray& cmd_msg) {
 
 int delay1 = 1; // Ajuste de delay
 
-std_msgs::Int16MultiArray msg_R;
-std_msgs::Int16MultiArray msg_L;
-std_msgs::Int16MultiArray msg_arm_R;
-std_msgs::Int16MultiArray msg_arm_L_head;
+std_msgs::Float64MultiArray msg_R;
+std_msgs::Float64MultiArray msg_L;
+std_msgs::Float64MultiArray msg_arm_R;
+std_msgs::Float64MultiArray msg_arm_L_head;
 
 ros::Publisher right_leg_pub("/marta/right_leg/state", &msg_R);
 ros::Publisher left_leg_pub("/marta/left_leg/state", &msg_L);
 ros::Publisher arm_r_pub("/marta/arm_r/state", &msg_arm_R);
-ros::Subscriber<std_msgs::Int16MultiArray> right_leg_sub("/marta/right_leg/command", right_leg_cb);
-ros::Subscriber<std_msgs::Int16MultiArray> left_leg_sub("/marta/left_leg/command", left_leg_cb);
-ros::Subscriber<std_msgs::Int16MultiArray> arm_r_sub("/marta/arm_r/command", arm_r_cb);
-ros::Subscriber<std_msgs::Int16MultiArray> arm_l_head_sub("/marta/arm_l_head/command", arm_l_head_cb);
+ros::Subscriber<std_msgs::Float64MultiArray> right_leg_sub("/marta/right_leg/command", right_leg_cb);
+ros::Subscriber<std_msgs::Float64MultiArray> left_leg_sub("/marta/left_leg/command", left_leg_cb);
+ros::Subscriber<std_msgs::Float64MultiArray> arm_r_sub("/marta/arm_r/command", arm_r_cb);
+ros::Subscriber<std_msgs::Float64MultiArray> arm_l_head_sub("/marta/arm_l_head/command", arm_l_head_cb);
 
 void setup() {
   nh.initNode();
@@ -274,7 +272,7 @@ void loop() {
   if (recv_cnt1 > 0) {
     // Prepare msg data
     msg_R.data_length = recv_cnt1;
-    msg_R.data = (int16_t*) malloc(recv_cnt1 * sizeof(int16_t));
+    msg_R.data = (float*) malloc(recv_cnt1 * sizeof(float));
 
     for (i = 0; i < recv_cnt1; i++) {
       msg_R.data[i] = convert_state(sr_data1[i].present_position - goal_position_initial_R[i])*Signal_right[i];
@@ -288,7 +286,7 @@ void loop() {
   if (recv_cnt2 > 0) {
     // Prepare msg data
     msg_L.data_length = recv_cnt2;
-    msg_L.data = (int16_t*) malloc(recv_cnt2 * sizeof(int16_t));
+    msg_L.data = (float*) malloc(recv_cnt2 * sizeof(float));
     
     for (i = 0; i < recv_cnt2; i++) {
       msg_L.data[i] = convert_state(sr_data2[i].present_position - goal_position_initial_L[i])*Signal_left[i];
@@ -302,7 +300,7 @@ void loop() {
   if (recv_cnt3 > 0) {
     // Prepare msg data
     msg_arm_R.data_length = recv_cnt3;
-    msg_arm_R.data = (int16_t*) malloc(recv_cnt3 * sizeof(int16_t));
+    msg_arm_R.data = (float*) malloc(recv_cnt3 * sizeof(float));
     
     for (i = 0; i < recv_cnt3; i++) {
       msg_arm_R.data[i] = convert_state(sr_data3[i].present_position - goal_position_initial_arm_r[i])*Signal_arm_r[i];
