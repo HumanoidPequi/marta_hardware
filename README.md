@@ -33,17 +33,20 @@ This project uses the following libraries:
 
 ## 🚀 How to Compile and Upload the Code
 1. Install [PlatformIO](https://platformio.org/)
+   ```sh 
+   pip install platformio
+   ```
 2. Clone this repository:
    ```sh
    git clone git@github.com:HumanoidPequi/marta_hardware.git
    cd marta_hardware
    ```
-3. Start a project
+3. Start a project:
    ```sh 
    pio project init --board teensy40
    ```
 
-4. Set ros libraries to platformio
+4. Set ros libraries to platformio:
    ```sh
    rosrun rosserial_arduino make_libraries.py .pio/libdeps/teensy40/
    ```
