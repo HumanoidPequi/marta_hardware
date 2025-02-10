@@ -165,12 +165,11 @@ int convert_command_degree(int ang_command) {
   return position_command;
 }
 
-int convert_state(int ang_state /*, int32_t marta_joints_initial, bool joint_reversed*/) {
-  //Converte os valores de 16 bits recebidos pelo rosserial para os valores de 12 bits
-  int position_state = map(ang_state, -2048, 2048, -1800, 1800);
-  
-  return position_state;
+float convert_state(int ang_state) {
+  // Converte o valor de 12 bits de volta para radianos
+  return (float)ang_state * M_PI / 2048.0;
 }
+
 
 void right_leg_cb(const std_msgs::Float64MultiArray& cmd_msg) {
    for (int i = 0; i < DXL_ID_CNT; i++) {
