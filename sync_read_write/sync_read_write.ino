@@ -46,7 +46,7 @@ const uint8_t DXL_ID_LIST_ARM_R[DXL_ID_CNT_ARM_R] = {13,14,15};
 const uint8_t DXL_ID_LIST_ARM_L_HEAD[DXL_ID_CNT_ARM_L_HEAD] = {19,20,16,17,18};// 3 últimos são do braço esquerdo e os dois primeiros são da cabeça
 const int8_t Signal_left[DXL_ID_CNT] = {-1,-1,1,1,-1,1};
 const int8_t Signal_right[DXL_ID_CNT] = {-1,-1,-1,-1,1,1};
-const int8_t Signal_arm_r[DXL_ID_CNT_ARM_R] = {1, 1, -1}; 
+const int8_t Signal_arm_r[DXL_ID_CNT_ARM_R] = {-1, 1, -1}; 
 const int8_t Signal_arm_l_head[DXL_ID_CNT_ARM_L_HEAD] = {1, 1, 1, -1, 1}; 
 const uint16_t user_pkt_buf_cap = 128;
 uint8_t user_pkt_buf1[user_pkt_buf_cap];
@@ -55,18 +55,18 @@ uint8_t user_pkt_buf3[user_pkt_buf_cap];
 
 //perna direita
 const int32_t rHipYaw  =    2048; //1
-const int32_t rHipRoll  =   2048; //2
-const int32_t rHipPitch  =  2048; //3
+const int32_t rHipRoll  =   1980; //2
+const int32_t rHipPitch  =  2020; //3
 const int32_t rKneePitch =  2048; //4
 const int32_t rAnklePitch = 2048; //5
 const int32_t rAnkleRoll =  2048;  //6
 
 //perna esquerda
 const int32_t lHipYaw   =   2048; //7
-const int32_t lHipRoll  =   2048; //8
-const int32_t lHipPitch =   2048; //9
+const int32_t lHipRoll  =   2010; //8
+const int32_t lHipPitch =   1100; //9
 const int32_t lKneePitch =  2048; //10
-const int32_t lAnklePitch = 2048; //11
+const int32_t lAnklePitch = 2020; //11
 const int32_t lAnkleRoll  = 2048; //12
 
 unsigned int minPosR[DXL_ID_CNT] = {rHipYaw-341, rHipRoll-148, rHipPitch-455, rKneePitch-1024, rAnklePitch-455, rAnkleRoll-341}; // angulos minimos (12Bits)
@@ -141,11 +141,11 @@ BNO080 myIMU;
 // This namespace is required to use DYNAMIXEL Control table item name definitions
 using namespace ControlTableItem;
 
-int32_t goal_position_initial_R[DXL_ID_CNT] = {2048,2048,2048,2048,2048,2048};
-int32_t goal_position_R[DXL_ID_CNT] = {2048,2048,2048,2048,2048,2048};
+int32_t goal_position_initial_R[DXL_ID_CNT] = {rHipYaw,rHipRoll,rHipPitch,rKneePitch,rAnklePitch,rAnkleRoll};
+int32_t goal_position_R[DXL_ID_CNT] = {rHipYaw,rHipRoll,rHipPitch,rKneePitch,rAnklePitch,rAnkleRoll};
 
-int32_t goal_position_initial_L[DXL_ID_CNT] = {2048,2048,2100,2048,2048,2048};
-int32_t goal_position_L[DXL_ID_CNT] = {2048,2048,2100,2048,2048,2048};
+int32_t goal_position_initial_L[DXL_ID_CNT] = {lHipYaw,lHipRoll,lHipPitch,lKneePitch,lAnklePitch,lAnkleRoll};
+int32_t goal_position_L[DXL_ID_CNT] = {lHipYaw,lHipRoll,lHipPitch,lKneePitch,lAnklePitch,lAnkleRoll};
 
 int32_t goal_position_initial_arm_r[DXL_ID_CNT_ARM_R] = {2048,2048,2048};
 int32_t goal_position_arm_r[DXL_ID_CNT_ARM_R] = {2048,2048,2048};
