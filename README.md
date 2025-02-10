@@ -38,11 +38,20 @@ This project uses the following libraries:
    git clone git@github.com:HumanoidPequi/marta_hardware.git
    cd marta_hardware
    ```
-3. Compile and upload the firmware:
+3. Start a project
+   '''sh 
+   pio project init --board teensy40
+   '''
+
+4. Set ros libraries to platformio
+   '''sh
+   rosrun rosserial_arduino make_libraries.py .pio/libdeps/teensy40/
+   '''
+5. Compile and upload the firmware:
    ```sh
    pio run --target upload
    ```
-4. Monitor the serial output:
+6. If you want to monitor the serial output:
    ```sh
    pio device monitor
    ```
