@@ -39,14 +39,14 @@ This project uses the following libraries:
    cd marta_hardware
    ```
 3. Start a project
-   '''sh 
+   ```sh 
    pio project init --board teensy40
-   '''
+   ```
 
 4. Set ros libraries to platformio
-   '''sh
+   ```sh
    rosrun rosserial_arduino make_libraries.py .pio/libdeps/teensy40/
-   '''
+   ```
 5. Compile and upload the firmware:
    ```sh
    pio run --target upload
