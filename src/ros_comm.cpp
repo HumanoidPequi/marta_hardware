@@ -10,7 +10,7 @@ std_msgs::Float64MultiArray dummy_msg;  // mensagem dummy para construção dos 
 ros::Publisher right_leg_pub("/marta/right_leg/state", &dummy_msg);
 ros::Publisher left_leg_pub("/marta/left_leg/state", &dummy_msg);
 ros::Publisher arm_r_pub("/marta/arm_r/state", &dummy_msg);
-ros::Publisher pub_imu("/micro/IMU", &dummy_msg);  // use o tipo de mensagem adequado em seu caso
+ros::Publisher pub_imu("/marta/imu", &dummy_msg);  
 
 // Declarando os subscribers e seus callbacks
 ros::Subscriber<std_msgs::Float64MultiArray> right_leg_sub("/marta/right_leg/command", right_leg_cb);
