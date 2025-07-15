@@ -36,7 +36,6 @@ const int DXL_DIR_PIN5 = 23; // pino de controle Serial5
 
 const uint8_t BROADCAST_ID = 254;
 const float DYNAMIXEL_PROTOCOL_VERSION = 2.0;
-const float DYNAMIXEL_PROTOCOL_VERSION1 = 1.0;
 const uint8_t DXL_ID_CNT = 6;
 const uint8_t DXL_ID_CNT_ARM_R = DXL_ID_CNT/2;
 const uint8_t DXL_ID_CNT_ARM_L_HEAD = DXL_ID_CNT - 1;
@@ -52,10 +51,11 @@ const uint16_t user_pkt_buf_cap = 128;
 uint8_t user_pkt_buf1[user_pkt_buf_cap];
 uint8_t user_pkt_buf2[user_pkt_buf_cap];
 uint8_t user_pkt_buf3[user_pkt_buf_cap];
+uint8_t user_pkt_buf5[user_pkt_buf_cap];
 
 //perna direita
 const int32_t rHipYaw  =    2048; //1
-const int32_t rHipRoll  =   1980; //2
+const int32_t rHipRoll  =   2020; //2
 const int32_t rHipPitch  =  2020; //3
 const int32_t rKneePitch =  2048; //4
 const int32_t rAnklePitch = 2048; //5
@@ -63,8 +63,8 @@ const int32_t rAnkleRoll =  2048;  //6
 
 //perna esquerda
 const int32_t lHipYaw   =   2048; //7
-const int32_t lHipRoll  =   2010; //8
-const int32_t lHipPitch =   1100; //9
+const int32_t lHipRoll  =   2048; //8
+const int32_t lHipPitch =   1130; //9
 const int32_t lKneePitch =  2048; //10
 const int32_t lAnklePitch = 2020; //11
 const int32_t lAnkleRoll  = 2048; //12
@@ -85,15 +85,6 @@ const uint16_t SR_ADDR_LEN = 4;
 const uint16_t SW_START_ADDR = 116;
 // Length of the Data to write; Length of Position data of X series is 4 byte
 const uint16_t SW_ADDR_LEN = 4;
-
-// Starting address of the Data to read; Present Position = 132
-const uint16_t SR_START_ADDR1 = 38;
-// Length of the Data to read; Length of Position data of X series is 4 byte
-const uint16_t SR_ADDR_LEN1 = 2;
-// Starting address of the Data to write; Goal Position = 116
-const uint16_t SW_START_ADDR1 = 30;
-// Length of the Data to write; Length of Position data of X series is 4 byte
-const uint16_t SW_ADDR_LEN1 = 2;
 
 typedef struct sr_data {
   int32_t present_position;
@@ -126,6 +117,10 @@ DYNAMIXEL::XELInfoSyncRead_t info_xels_sr3[DXL_ID_CNT_ARM_R];
 sw_data_t sw_data3[DXL_ID_CNT_ARM_R];
 DYNAMIXEL::InfoSyncWriteInst_t sw_infos3;
 DYNAMIXEL::XELInfoSyncWrite_t info_xels_sw3[DXL_ID_CNT_ARM_R];
+
+sr_data_t sr_data5[DXL_ID_CNT_ARM_L_HEAD];
+DYNAMIXEL::InfoSyncReadInst_t sr_infos5;
+DYNAMIXEL::XELInfoSyncRead_t info_xels_sr5[DXL_ID_CNT_ARM_L_HEAD];
 
 sw_data_t sw_data5[DXL_ID_CNT_ARM_L_HEAD];
 DYNAMIXEL::InfoSyncWriteInst_t sw_infos5;
@@ -165,11 +160,16 @@ int convert_command_degree(int ang_command) {
   return position_command;
 }
 
-float convert_state(int ang_state) {
-  // Converte o valor de 12 bits de volta para radianos
-  return (float)ang_state * M_PI / 2048.0;
+float convert_state(int raw_diff) {
+  // Ajusta o valor para considerar o wrap-around (12 bits: 0 a 4095)
+  if (raw_diff > 2048)
+    raw_diff -= 4096;
+  else if (raw_diff < -2048)
+    raw_diff += 4096;
+  
+  // Converte a diferença para radianos
+  return (float)raw_diff * M_PI / 2048.0;
 }
-
 
 void right_leg_cb(const std_msgs::Float64MultiArray& cmd_msg) {
    for (int i = 0; i < DXL_ID_CNT; i++) {
@@ -209,6 +209,7 @@ std_msgs::Float64MultiArray msg_arm_L_head;
 ros::Publisher right_leg_pub("/marta/right_leg/state", &msg_R);
 ros::Publisher left_leg_pub("/marta/left_leg/state", &msg_L);
 ros::Publisher arm_r_pub("/marta/arm_r/state", &msg_arm_R);
+ros::Publisher arm_l_head_pub("/marta/arm_l_head/state", &msg_arm_L_head);
 ros::Subscriber<std_msgs::Float64MultiArray> right_leg_sub("/marta/right_leg/command", right_leg_cb);
 ros::Subscriber<std_msgs::Float64MultiArray> left_leg_sub("/marta/left_leg/command", left_leg_cb);
 ros::Subscriber<std_msgs::Float64MultiArray> arm_r_sub("/marta/arm_r/command", arm_r_cb);
@@ -223,6 +224,7 @@ void setup() {
   nh.advertise(right_leg_pub);
   nh.advertise(left_leg_pub);
   nh.advertise(arm_r_pub);
+  nh.advertise(arm_l_head_pub);
 
   dynamixel_setup();
 
@@ -267,6 +269,7 @@ void loop() {
   uint8_t recv_cnt1 = dxl1.syncRead(&sr_infos1);
   uint8_t recv_cnt2 = dxl2.syncRead(&sr_infos2);
   uint8_t recv_cnt3 = dxl3.syncRead(&sr_infos3);
+  uint8_t recv_cnt5 = dxl5.syncRead(&sr_infos5);
   
   if (recv_cnt1 > 0) {
     // Prepare msg data
@@ -310,6 +313,20 @@ void loop() {
     free(msg_arm_R.data); // Free the allocated memory
   }
 
+  if (recv_cnt5 > 0) {
+    // Prepare msg data
+    msg_arm_L_head.data_length = recv_cnt5;
+    msg_arm_L_head.data = (float*) malloc(recv_cnt5 * sizeof(float));
+    
+    for (i = 0; i < recv_cnt5; i++) {
+      msg_arm_L_head.data[i] = convert_state(sr_data5[i].present_position - goal_position_initial_arm_l_head[i])*Signal_arm_l_head[i];
+      //Serial.println(msg_L.data[i]); // Debug print to Serial
+    }
+    
+    arm_l_head_pub.publish(&msg_arm_L_head);
+    free(msg_arm_L_head.data); // Free the allocated memory
+  }
+
   digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 
   nh.spinOnce();
@@ -330,7 +347,7 @@ void dynamixel_setup(){
   dxl3.setPortProtocolVersion(DYNAMIXEL_PROTOCOL_VERSION);
 
   dxl5.begin(1000000);
-  dxl5.setPortProtocolVersion(DYNAMIXEL_PROTOCOL_VERSION1);
+  dxl5.setPortProtocolVersion(DYNAMIXEL_PROTOCOL_VERSION);
 
   // Prepare the SyncRead structure
   for (i = 0; i < DXL_ID_CNT; i++) {
@@ -457,11 +474,27 @@ void sync_read_write_setup(){
   }
   sw_infos3.is_info_changed = true;
 
+  // Fill the members of structure to syncRead using external user packet buffer
+  sr_infos5.packet.p_buf = user_pkt_buf5;
+  sr_infos5.packet.buf_capacity = user_pkt_buf_cap;
+  sr_infos5.packet.is_completed = false;
+  sr_infos5.addr = SR_START_ADDR;
+  sr_infos5.addr_length = SR_ADDR_LEN;
+  sr_infos5.p_xels = info_xels_sr5;
+  sr_infos5.xel_count = 0;
+
+  for (int i = 0; i < DXL_ID_CNT_ARM_L_HEAD; i++) {
+    info_xels_sr5[i].id = DXL_ID_LIST_ARM_L_HEAD[i];
+    info_xels_sr5[i].p_recv_buf = (uint8_t*)&sr_data5[i];
+    sr_infos5.xel_count++;
+  }
+  sr_infos5.is_info_changed = true;
+
   // Fill the members of structure to syncWrite using internal packet buffer
   sw_infos5.packet.p_buf = nullptr;
   sw_infos5.packet.is_completed = false;
-  sw_infos5.addr = SW_START_ADDR1;
-  sw_infos5.addr_length = SW_ADDR_LEN1;
+  sw_infos5.addr = SW_START_ADDR;
+  sw_infos5.addr_length = SW_ADDR_LEN;
   sw_infos5.p_xels = info_xels_sw5;
   sw_infos5.xel_count = 0;
 
@@ -490,7 +523,8 @@ void bno_setup() {
   delay(10);
   Wire.setClock(400000); // Increase I2C data rate to 400kHz
   delay(10);
-  myIMU.enableLinearAccelerometer(8); // m/s^2 no gravity
+  // myIMU.enableLinearAccelerometer(8); // m/s^2 no gravity
+  myIMU.enableAccelerometer(8);
   myIMU.enableRotationVector(4);      // quat
   myIMU.enableGyro(12);               // rad/s
 
@@ -512,7 +546,8 @@ void bno_loop() {
     byte quatAccuracy = 0;
 
     // get IMU data in one go for each sensor type
-    myIMU.getLinAccel(lin.x, lin.y, lin.z, linAccuracy);
+    //myIMU.getLinAccel(lin.x, lin.y, lin.z, linAccuracy);
+    myIMU.getAccel(lin.x, lin.y, lin.z, linAccuracy);
     myIMU.getGyro(ang.x, ang.y, ang.z, gyroAccuracy);
     myIMU.getQuat(inertial.orientation.x, inertial.orientation.y, inertial.orientation.z, inertial.orientation.w, quatRadianAccuracy, quatAccuracy);
     inertial.angular_velocity = ang;
