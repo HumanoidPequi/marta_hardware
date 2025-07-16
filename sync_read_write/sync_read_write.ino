@@ -20,7 +20,7 @@ geometry_msgs::Vector3 lin;
 geometry_msgs::Vector3 ang;
 
 
-ros::Publisher pub_imu("micro/IMU", &inertial);
+ros::Publisher pub_imu("marta/imu", &inertial);
 char in[] = "/imu";
 
 //#define DEBUG_SERIAL Serial
@@ -43,10 +43,10 @@ const uint8_t DXL_ID_LIST_R[DXL_ID_CNT] = {1,2,3,4,5,6};
 const uint8_t DXL_ID_LIST_L[DXL_ID_CNT] = {7,8,9,10,11,12};
 const uint8_t DXL_ID_LIST_ARM_R[DXL_ID_CNT_ARM_R] = {13,14,15};
 const uint8_t DXL_ID_LIST_ARM_L_HEAD[DXL_ID_CNT_ARM_L_HEAD] = {19,20,16,17,18};// 3 últimos são do braço esquerdo e os dois primeiros são da cabeça
-const int8_t Signal_left[DXL_ID_CNT] = {-1,-1,1,1,-1,1};
-const int8_t Signal_right[DXL_ID_CNT] = {-1,-1,-1,-1,1,1};
-const int8_t Signal_arm_r[DXL_ID_CNT_ARM_R] = {-1, 1, -1}; 
-const int8_t Signal_arm_l_head[DXL_ID_CNT_ARM_L_HEAD] = {1, 1, 1, -1, 1}; 
+const int8_t Signal_left[DXL_ID_CNT] = {-1,1,1,1,-1,-1};
+const int8_t Signal_right[DXL_ID_CNT] = {-1,1,-1,-1,1,-1};
+const int8_t Signal_arm_r[DXL_ID_CNT_ARM_R] = {1, 1, 1}; 
+const int8_t Signal_arm_l_head[DXL_ID_CNT_ARM_L_HEAD] = {1, 1, -1, -1, -1}; 
 const uint16_t user_pkt_buf_cap = 128;
 uint8_t user_pkt_buf1[user_pkt_buf_cap];
 uint8_t user_pkt_buf2[user_pkt_buf_cap];
