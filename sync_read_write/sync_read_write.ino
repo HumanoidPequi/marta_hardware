@@ -36,6 +36,7 @@ const int DXL_DIR_PIN5 = 23; // pino de controle Serial5
 
 const uint8_t BROADCAST_ID = 254;
 const float DYNAMIXEL_PROTOCOL_VERSION = 2.0;
+const float DYNAMIXEL_PROTOCOL_VERSION1 = 1.0;
 const uint8_t DXL_ID_CNT = 6;
 const uint8_t DXL_ID_CNT_ARM_R = DXL_ID_CNT/2;
 const uint8_t DXL_ID_CNT_ARM_L_HEAD = DXL_ID_CNT - 1;
@@ -43,10 +44,12 @@ const uint8_t DXL_ID_LIST_R[DXL_ID_CNT] = {1,2,3,4,5,6};
 const uint8_t DXL_ID_LIST_L[DXL_ID_CNT] = {7,8,9,10,11,12};
 const uint8_t DXL_ID_LIST_ARM_R[DXL_ID_CNT_ARM_R] = {13,14,15};
 const uint8_t DXL_ID_LIST_ARM_L_HEAD[DXL_ID_CNT_ARM_L_HEAD] = {19,20,16,17,18};// 3 últimos são do braço esquerdo e os dois primeiros são da cabeça
+//const uint8_t DXL_ID_LIST_ARM_R[DXL_ID_CNT_ARM_R] = {19,20,16,17,18};
+//const uint8_t DXL_ID_LIST_ARM_L_HEAD[DXL_ID_CNT_ARM_L_HEAD] = {13,14,15};// 3 últimos são do braço esquerdo e os dois primeiros são da cabeça
 const int8_t Signal_left[DXL_ID_CNT] = {-1,1,1,1,-1,-1};
 const int8_t Signal_right[DXL_ID_CNT] = {-1,1,-1,-1,1,-1};
 const int8_t Signal_arm_r[DXL_ID_CNT_ARM_R] = {1, 1, 1}; 
-const int8_t Signal_arm_l_head[DXL_ID_CNT_ARM_L_HEAD] = {1, 1, -1, -1, -1}; 
+const int8_t Signal_arm_l_head[DXL_ID_CNT_ARM_L_HEAD] = {1,1,-1, -1, -1}; 
 const uint16_t user_pkt_buf_cap = 128;
 uint8_t user_pkt_buf1[user_pkt_buf_cap];
 uint8_t user_pkt_buf2[user_pkt_buf_cap];
@@ -85,6 +88,15 @@ const uint16_t SR_ADDR_LEN = 4;
 const uint16_t SW_START_ADDR = 116;
 // Length of the Data to write; Length of Position data of X series is 4 byte
 const uint16_t SW_ADDR_LEN = 4;
+
+// Starting address of the Data to read; Present Position = 132
+const uint16_t SR_START_ADDR1 = 38;
+// Length of the Data to read; Length of Position data of X series is 4 byte
+const uint16_t SR_ADDR_LEN1 = 2;
+// Starting address of the Data to write; Goal Position = 116
+const uint16_t SW_START_ADDR1 = 30;
+// Length of the Data to write; Length of Position data of X series is 4 byte
+const uint16_t SW_ADDR_LEN1 = 2;
 
 typedef struct sr_data {
   int32_t present_position;
@@ -344,7 +356,7 @@ void dynamixel_setup(){
   dxl2.setPortProtocolVersion(DYNAMIXEL_PROTOCOL_VERSION);
 
   dxl3.begin(1000000);
-  dxl3.setPortProtocolVersion(DYNAMIXEL_PROTOCOL_VERSION);
+  dxl3.setPortProtocolVersion(DYNAMIXEL_PROTOCOL_VERSION1);
 
   dxl5.begin(1000000);
   dxl5.setPortProtocolVersion(DYNAMIXEL_PROTOCOL_VERSION);
@@ -462,8 +474,8 @@ void sync_read_write_setup(){
   // Fill the members of structure to syncWrite using internal packet buffer
   sw_infos3.packet.p_buf = nullptr;
   sw_infos3.packet.is_completed = false;
-  sw_infos3.addr = SW_START_ADDR;
-  sw_infos3.addr_length = SW_ADDR_LEN;
+  sw_infos3.addr = SW_START_ADDR1;
+  sw_infos3.addr_length = SW_ADDR_LEN1;
   sw_infos3.p_xels = info_xels_sw3;
   sw_infos3.xel_count = 0;
 
